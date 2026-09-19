@@ -230,19 +230,22 @@
   }
   .field input:focus, .field select:focus { outline: 2px solid var(--round-stat); outline-offset: -1px; }
 
-  .field-row { display: flex; gap: 14px; }
-  .field-row .field { flex: 1; }
-
   .section-label {
     font-family: 'Archivo Black', sans-serif;
     font-size: 1rem;
-    margin: 24px 0 10px;
+    margin: 24px 0 4px;
+  }
+
+  .section-hint {
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    margin: 0 0 12px;
   }
 
   .exercise-row {
     display: grid;
-    grid-template-columns: 20px 1fr 62px 62px 36px;
-    gap: 8px;
+    grid-template-columns: 18px 1fr 44px 44px 44px 32px;
+    gap: 6px;
     align-items: center;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -255,7 +258,7 @@
 
   .exercise-row input {
     font: inherit;
-    padding: 8px;
+    padding: 8px 6px;
     border-radius: 8px;
     border: 1px solid var(--border);
     background: var(--bg);
@@ -266,7 +269,7 @@
   }
 
   .exercise-row input.name-input { font-weight: 600; }
-  .exercise-row input.time-input { text-align: center; font-variant-numeric: tabular-nums; }
+  .exercise-row input.time-input { text-align: center; font-variant-numeric: tabular-nums; padding-left: 2px; padding-right: 2px; }
 
   .exercise-row .remove-btn {
     background: none;
@@ -280,16 +283,16 @@
 
   .col-labels {
     display: grid;
-    grid-template-columns: 20px 1fr 62px 62px 36px;
-    gap: 8px;
-    font-size: 0.65rem;
+    grid-template-columns: 18px 1fr 44px 44px 44px 32px;
+    gap: 6px;
+    font-size: 0.62rem;
     color: var(--ink-faint);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     padding: 0 10px;
     margin-bottom: 6px;
   }
-  .col-labels span:nth-child(3), .col-labels span:nth-child(4) { text-align: center; }
+  .col-labels span:nth-child(3), .col-labels span:nth-child(4), .col-labels span:nth-child(5) { text-align: center; }
 
   .add-exercise-btn {
     width: 100%;
@@ -380,7 +383,7 @@
   }
   .preview-row .idx { color: #666; font-weight: 700; width: 18px; flex-shrink: 0; }
   .preview-row .name { flex: 1; font-weight: 700; }
-  .preview-row .times { color: #9a9a9a; font-size: 0.78rem; flex-shrink: 0; }
+  .preview-row .times { color: #9a9a9a; font-size: 0.78rem; flex-shrink: 0; text-align: right; }
 
   .start-btn {
     flex-shrink: 0;
@@ -414,6 +417,7 @@
   .phase-band.prepare { background: var(--prepare); color: #17171a; }
   .phase-band.work { background: var(--work); color: #082b0e; }
   .phase-band.rest { background: var(--rest); color: #350706; }
+  .phase-band.manual { background: var(--work); color: #082b0e; }
 
   .phase-label {
     font-family: 'Archivo Black', sans-serif;
@@ -430,6 +434,7 @@
 
   .phase-exercise { font-weight: 800; font-size: clamp(1.1rem, 5vw, 1.4rem); }
   .phase-next { font-weight: 700; font-size: 0.78rem; letter-spacing: 0.05em; opacity: 0.7; margin-top: 2px; text-transform: uppercase; }
+  .phase-instructions { font-weight: 700; font-size: 0.85rem; opacity: 0.8; margin-top: -4px; }
 
   .player-stats {
     display: flex;
@@ -474,15 +479,6 @@
     color: var(--accent);
   }
 
-  .hint-text {
-    color: var(--ink-faint);
-    font-size: 0.72rem;
-    text-align: center;
-    padding: 0 20px 4px;
-    max-width: 420px;
-    margin: 0 auto;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
@@ -496,7 +492,7 @@
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'interval-coach-workouts-v1';
+  var STORAGE_KEY = 'interval-coach-workouts-v2';
   var PREPARE_SECONDS = 5;
   var COUNT_FROM = 5;
 
@@ -518,14 +514,10 @@
     return [
       {
         id: 'wk-sample-1',
-        name: 'Full Body HIIT',
-        rounds: 3,
-        restBetweenSets: 60,
+        name: 'Push Day',
         exercises: [
-          { id: 'ex-1', name: 'Jump squats', work: 40, rest: 20 },
-          { id: 'ex-2', name: 'Push-ups', work: 30, rest: 15 },
-          { id: 'ex-3', name: 'Mountain climbers', work: 40, rest: 20 },
-          { id: 'ex-4', name: 'Plank hold', work: 45, rest: 15 }
+          { id: 'ex-1', name: 'Bench press', sets: 4, work: 0, rest: 120 },
+          { id: 'ex-2', name: 'Incline press', sets: 4, work: 0, rest: 90 }
         ]
       }
     ];
@@ -552,8 +544,12 @@
     return (m < 10 ? '0' + m : m) + ':' + (sec < 10 ? '0' + sec : sec);
   }
 
+  function totalSetsCount(w) {
+    return w.exercises.reduce(function (sum, ex) { return sum + Math.max(1, ex.sets || 1); }, 0);
+  }
+
   function totalDuration(w) {
-    return buildSegments(w).reduce(function (sum, s) { return sum + s.seconds; }, 0);
+    return buildSegments(w).reduce(function (sum, s) { return sum + (s.seconds || 0); }, 0);
   }
 
   // ---------------- speech / ducking ----------------
@@ -589,48 +585,63 @@
   })();
 
   // ---------------- segment engine ----------------
+  // Every exercise carries its own set count and its own rest — exercises run
+  // one after another (not a shared circuit/round), which matches how a real
+  // strength workout is structured: finish all sets of an exercise, then move on.
 
   function buildSegments(workout) {
     var segments = [];
-    if (!workout.exercises.length) return segments;
-    var totalRounds = workout.rounds;
     var totalExercises = workout.exercises.length;
+    if (!totalExercises) return segments;
 
     segments.push({
       phase: 'prepare', label: 'Get ready', seconds: PREPARE_SECONDS,
-      announce: 'Get ready', round: 1, totalRounds: totalRounds, exerciseNumber: 1, totalExercises: totalExercises
+      announce: 'Get ready', exerciseNumber: 1, totalExercises: totalExercises,
+      setNumber: 1, totalSets: Math.max(1, workout.exercises[0].sets || 1)
     });
 
-    for (var round = 0; round < workout.rounds; round++) {
-      workout.exercises.forEach(function (exercise, exerciseIndex) {
-        segments.push({
-          phase: 'work', label: exercise.name, seconds: exercise.work,
-          announce: 'Begin, ' + exercise.name,
-          round: round + 1, totalRounds: totalRounds, exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises
-        });
+    workout.exercises.forEach(function (exercise, exerciseIndex) {
+      var totalSets = Math.max(1, exercise.sets || 1);
+      var isLastExercise = exerciseIndex === totalExercises - 1;
 
-        var isLastExercise = exerciseIndex === workout.exercises.length - 1;
-        var isLastRound = round === workout.rounds - 1;
+      for (var setIndex = 0; setIndex < totalSets; setIndex++) {
+        var isLastSet = setIndex === totalSets - 1;
+        var setLabel = 'set ' + (setIndex + 1) + ' of ' + totalSets;
 
-        if (exercise.rest > 0 && !(isLastExercise && isLastRound)) {
-          var nextExercise = workout.exercises[exerciseIndex + 1];
+        if (exercise.work > 0) {
           segments.push({
-            phase: 'rest', label: 'Rest', seconds: exercise.rest,
-            announce: nextExercise ? ('Rest. Next up, ' + nextExercise.name) : 'Rest',
-            round: round + 1, totalRounds: totalRounds, exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises
+            phase: 'work', label: exercise.name, seconds: exercise.work,
+            announce: 'Begin, ' + exercise.name + ', ' + setLabel,
+            exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
+            setNumber: setIndex + 1, totalSets: totalSets
+          });
+        } else {
+          segments.push({
+            phase: 'manual', label: exercise.name, seconds: 0,
+            announce: exercise.name + ', ' + setLabel,
+            exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
+            setNumber: setIndex + 1, totalSets: totalSets
           });
         }
-      });
 
-      var isLastRoundOuter = round === workout.rounds - 1;
-      if (!isLastRoundOuter && workout.restBetweenSets > 0) {
-        segments.push({
-          phase: 'rest', label: 'Rest between sets', seconds: workout.restBetweenSets,
-          announce: 'Set complete. Rest',
-          round: round + 1, totalRounds: totalRounds, exerciseNumber: totalExercises, totalExercises: totalExercises
-        });
+        if (exercise.rest > 0 && !(isLastSet && isLastExercise)) {
+          var nextLabel;
+          if (!isLastSet) {
+            nextLabel = exercise.name + ', set ' + (setIndex + 2) + ' of ' + totalSets;
+          } else {
+            var nextExercise = workout.exercises[exerciseIndex + 1];
+            nextLabel = nextExercise ? nextExercise.name : '';
+          }
+          segments.push({
+            phase: 'rest', label: 'Rest', seconds: exercise.rest,
+            announce: nextLabel ? ('Rest. Next up, ' + nextLabel) : 'Rest',
+            exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
+            setNumber: setIndex + 1, totalSets: totalSets
+          });
+        }
       }
-    }
+    });
+
     return segments;
   }
 
@@ -675,7 +686,7 @@
 
     if (state.workouts.length === 0) {
       scroll.appendChild(el('div', { class: 'empty-state' }, [
-        'No workouts yet. Build one with your own exercises — each gets its own work and rest time.'
+        'No workouts yet. Build one with your own exercises — each gets its own number of sets, and its own rest time.'
       ]));
     } else {
       var list = el('div', { class: 'workout-list' });
@@ -684,7 +695,7 @@
           el('div', { class: 'workout-card-name' }, [w.name]),
           el('div', { class: 'workout-card-meta' }, [
             w.exercises.length + ' exercise' + (w.exercises.length === 1 ? '' : 's') + ' · ' +
-            w.rounds + ' round' + (w.rounds === 1 ? '' : 's') + ' · ' + fmtClock(totalDuration(w))
+            totalSetsCount(w) + ' sets total · ' + fmtClock(totalDuration(w)) + ' min. time'
           ])
         ]);
         var actions = el('div', { class: 'card-actions' }, [
@@ -709,9 +720,9 @@
 
   // ---------- Editor ----------
 
-  function emptyExercise() { return { id: uid('ex'), name: '', work: 30, rest: 15 }; }
+  function emptyExercise() { return { id: uid('ex'), name: '', sets: 3, work: 0, rest: 60 }; }
   function emptyWorkout() {
-    return { id: uid('wk'), name: '', rounds: 1, restBetweenSets: 60, exercises: [emptyExercise()] };
+    return { id: uid('wk'), name: '', exercises: [emptyExercise()] };
   }
 
   function startNewWorkout() {
@@ -742,37 +753,18 @@
     var nameField = el('div', { class: 'field' }, [
       el('span', { class: 'field-label' }, ['Workout name'])
     ]);
-    var nameInput = el('input', { placeholder: 'Leg day', value: w.name });
+    var nameInput = el('input', { placeholder: 'Push day', value: w.name });
     nameInput.addEventListener('input', function (e) { w.name = e.target.value; updateSaveState(); });
     nameField.appendChild(nameInput);
     scroll.appendChild(nameField);
 
-    var row = el('div', { class: 'field-row' });
-
-    var roundsField = el('div', { class: 'field' }, [el('span', { class: 'field-label' }, ['Rounds (sets)'])]);
-    var roundsInput = el('input', { type: 'number', min: '1', value: String(w.rounds) });
-    roundsInput.addEventListener('input', function (e) {
-      w.rounds = Math.max(1, parseInt(e.target.value, 10) || 1);
-      updateTotal();
-    });
-    roundsField.appendChild(roundsInput);
-
-    var restField = el('div', { class: 'field' }, [el('span', { class: 'field-label' }, ['Rest between sets (sec)'])]);
-    var restInput = el('input', { type: 'number', min: '0', value: String(w.restBetweenSets) });
-    restInput.addEventListener('input', function (e) {
-      w.restBetweenSets = Math.max(0, parseInt(e.target.value, 10) || 0);
-      updateTotal();
-    });
-    restField.appendChild(restInput);
-
-    row.appendChild(roundsField);
-    row.appendChild(restField);
-    scroll.appendChild(row);
-
     scroll.appendChild(el('div', { class: 'section-label' }, ['Exercises']));
+    scroll.appendChild(el('div', { class: 'section-hint' }, [
+      'Each exercise runs its own sets, back to back, before moving to the next. Set Work to 0 for a self-paced lift — tap "Done" after each set instead of a countdown.'
+    ]));
 
     scroll.appendChild(el('div', { class: 'col-labels' }, [
-      el('span', {}, ['']), el('span', {}, ['Name']), el('span', {}, ['Work']), el('span', {}, ['Rest']), el('span', {}, [''])
+      el('span', {}, ['']), el('span', {}, ['Name']), el('span', {}, ['Sets']), el('span', {}, ['Work']), el('span', {}, ['Rest']), el('span', {}, [''])
     ]));
 
     var exerciseList = el('div', { id: 'exercise-list' });
@@ -790,7 +782,7 @@
     }, ['+ Add exercise']));
 
     var footer = el('div', { class: 'editor-footer' });
-    var totalSpan = el('span', { class: 'total-time', id: 'total-time' }, ['Total time: ' + fmtClock(totalDuration(w))]);
+    var totalSpan = el('span', { class: 'total-time', id: 'total-time' }, ['Min. time: ' + fmtClock(totalDuration(w))]);
     var saveBtn = el('button', {
       class: 'save-btn', id: 'save-btn',
       onclick: function () {
@@ -809,7 +801,7 @@
     app.appendChild(screen);
 
     function updateTotal() {
-      document.getElementById('total-time').textContent = 'Total time: ' + fmtClock(totalDuration(w));
+      document.getElementById('total-time').textContent = 'Min. time: ' + fmtClock(totalDuration(w));
     }
     function updateSaveState() {
       var ok = w.name.trim().length > 0 && w.exercises.every(function (ex) { return ex.name.trim().length > 0; });
@@ -826,13 +818,21 @@
       var nameInput = el('input', { class: 'name-input', placeholder: 'Exercise name', value: ex.name });
       nameInput.addEventListener('input', function (e) { ex.name = e.target.value; window.__editorUpdateSaveState(); });
 
-      var workInput = el('input', { class: 'time-input', type: 'number', min: '1', value: String(ex.work) });
-      workInput.addEventListener('input', function (e) {
-        ex.work = Math.max(1, parseInt(e.target.value, 10) || 1);
+      var setsInput = el('input', { class: 'time-input', type: 'number', min: '1', title: 'Sets', value: String(ex.sets) });
+      setsInput.addEventListener('input', function (e) {
+        ex.sets = Math.max(1, parseInt(e.target.value, 10) || 1);
         window.__editorUpdateTotal();
       });
 
-      var restInput = el('input', { class: 'time-input', type: 'number', min: '0', value: String(ex.rest) });
+      var workInput = el('input', {
+        class: 'time-input', type: 'number', min: '0', title: 'Work seconds (0 = self-paced)', value: String(ex.work)
+      });
+      workInput.addEventListener('input', function (e) {
+        ex.work = Math.max(0, parseInt(e.target.value, 10) || 0);
+        window.__editorUpdateTotal();
+      });
+
+      var restInput = el('input', { class: 'time-input', type: 'number', min: '0', title: 'Rest seconds', value: String(ex.rest) });
       restInput.addEventListener('input', function (e) {
         ex.rest = Math.max(0, parseInt(e.target.value, 10) || 0);
         window.__editorUpdateTotal();
@@ -851,7 +851,7 @@
 
       container.appendChild(el('div', { class: 'exercise-row' }, [
         el('span', { class: 'idx' }, [String(i + 1)]),
-        nameInput, workInput, restInput, removeBtn
+        nameInput, setsInput, workInput, restInput, removeBtn
       ]));
     });
   }
@@ -864,11 +864,10 @@
       workout: workout,
       segments: segments,
       index: 0,
-      remaining: segments.length ? segments[0].seconds : 0,
+      remaining: segments.length ? (segments[0].seconds || 0) : 0,
       running: false,
       started: false,
       finished: false,
-      lastAnnouncedIndex: -1,
       lastAnnouncedCount: null
     };
     state.screen = 'player';
@@ -885,43 +884,53 @@
       var p = state.playing;
       if (!p || !p.running) return;
       p.remaining -= 1;
-      advanceIfNeeded();
+      if (p.remaining <= 0) {
+        advanceToSegment(p.index + 1);
+      } else if (p.remaining <= COUNT_FROM && p.lastAnnouncedCount !== p.remaining) {
+        p.lastAnnouncedCount = p.remaining;
+        announcer.speak(String(p.remaining));
+      }
       renderPlayer();
     }, 1000);
   }
 
-  function advanceIfNeeded() {
+  // Moves the player onto segment `idx`, deciding whether it auto-counts down
+  // (prepare/work/rest) or waits for a manual tap (self-paced lifting set).
+  function advanceToSegment(idx) {
     var p = state.playing;
-    var seg = p.segments[p.index];
-
-    if (p.lastAnnouncedIndex !== p.index) {
-      p.lastAnnouncedIndex = p.index;
-      p.lastAnnouncedCount = null;
-      if (p.running) announcer.speak(seg.announce);
-    }
-
-    if (p.remaining <= 0) {
-      var next = p.index + 1;
-      if (next >= p.segments.length) {
-        p.finished = true;
-        p.running = false;
-        stopTicking();
-        announcer.speak('Workout complete. Great work.');
-        return;
-      }
-      p.index = next;
-      p.remaining = p.segments[next].seconds;
+    if (idx >= p.segments.length) {
+      p.finished = true;
+      p.running = false;
+      stopTicking();
+      announcer.speak('Workout complete. Great work.');
       return;
     }
-
-    if (p.running && p.remaining <= COUNT_FROM && p.remaining > 0 && p.lastAnnouncedCount !== p.remaining) {
-      p.lastAnnouncedCount = p.remaining;
-      announcer.speak(String(p.remaining));
+    var seg = p.segments[idx];
+    p.index = idx;
+    p.remaining = seg.seconds || 0;
+    p.lastAnnouncedCount = null;
+    announcer.speak(seg.announce);
+    if (seg.phase === 'manual') {
+      p.running = false;
+      stopTicking();
+    } else {
+      p.running = true;
+      startTicking();
     }
   }
 
-  function phaseClass(phase) { return phase === 'work' ? 'work' : (phase === 'rest' ? 'rest' : 'prepare'); }
-  function phaseHeading(phase) { return phase === 'work' ? 'Work' : (phase === 'rest' ? 'Rest' : 'Prepare'); }
+  function phaseClass(phase) {
+    if (phase === 'work' || phase === 'manual') return phase;
+    if (phase === 'rest') return 'rest';
+    return 'prepare';
+  }
+
+  function phaseHeading(phase, seg) {
+    if (phase === 'manual') return 'Set ' + seg.setNumber + ' of ' + seg.totalSets;
+    if (phase === 'work') return 'Work';
+    if (phase === 'rest') return 'Rest';
+    return 'Prepare';
+  }
 
   function renderPlayer() {
     app.innerHTML = '';
@@ -953,17 +962,18 @@
     if (!p.started) {
       var summary = el('div', { class: 'presummary' }, [
         presummaryItem(String(w.exercises.length), 'Exercises'),
-        presummaryItem(String(w.rounds), 'Rounds'),
-        presummaryItem(fmtClock(totalDuration(w)), 'Total time')
+        presummaryItem(String(totalSetsCount(w)), 'Total sets'),
+        presummaryItem(fmtClock(totalDuration(w)), 'Min. time')
       ]);
       player.appendChild(summary);
 
       var previewList = el('div', { class: 'preview-list' });
       w.exercises.forEach(function (ex, i) {
+        var workText = ex.work > 0 ? (ex.work + 's work') : 'self-paced';
         previewList.appendChild(el('div', { class: 'preview-row' }, [
           el('span', { class: 'idx' }, [String(i + 1)]),
           el('span', { class: 'name' }, [ex.name]),
-          el('span', { class: 'times' }, [ex.work + 's work / ' + ex.rest + 's rest'])
+          el('span', { class: 'times' }, [ex.sets + ' sets · ' + workText + ' · ' + ex.rest + 's rest'])
         ]));
       });
       player.appendChild(previewList);
@@ -972,8 +982,7 @@
         class: 'start-btn',
         onclick: function () {
           p.started = true;
-          p.running = true;
-          startTicking();
+          advanceToSegment(0);
           renderPlayer();
         }
       }, ['START']));
@@ -994,20 +1003,43 @@
     var seg = p.segments[p.index];
     var nextSeg = p.segments[p.index + 1];
 
-    var band = el('div', { class: 'phase-band ' + phaseClass(seg.phase) }, [
-      el('div', { class: 'phase-label' }, [phaseHeading(seg.phase).toUpperCase()]),
+    if (seg.phase === 'manual') {
+      var band = el('div', { class: 'phase-band manual' }, [
+        el('div', { class: 'phase-label' }, [('SET ' + seg.setNumber + ' OF ' + seg.totalSets)]),
+        el('div', { class: 'phase-clock' }, [seg.setNumber + '/' + seg.totalSets]),
+        el('div', { class: 'phase-exercise' }, [seg.label]),
+        el('div', { class: 'phase-instructions' }, ['Do your reps, then tap below'])
+      ]);
+      player.appendChild(band);
+
+      var isVeryLastSegment = p.index === p.segments.length - 1;
+      var ctaLabel = isVeryLastSegment ? 'FINISH WORKOUT' : (nextSeg && nextSeg.phase === 'rest' ? 'DONE — START REST' : 'DONE — NEXT UP');
+      player.appendChild(el('button', {
+        class: 'start-btn',
+        onclick: function () {
+          advanceToSegment(p.index + 1);
+          renderPlayer();
+        }
+      }, [ctaLabel]));
+
+      app.appendChild(player);
+      return;
+    }
+
+    var band2 = el('div', { class: 'phase-band ' + phaseClass(seg.phase) }, [
+      el('div', { class: 'phase-label' }, [phaseHeading(seg.phase, seg).toUpperCase()]),
       el('div', { class: 'phase-clock' }, [fmtClock(p.remaining)]),
       seg.phase !== 'prepare' ? el('div', { class: 'phase-exercise' }, [seg.label]) : null,
       nextSeg ? el('div', { class: 'phase-next' }, [
-        'Up next: ' + (nextSeg.phase === 'work' ? nextSeg.label : phaseHeading(nextSeg.phase))
+        'Up next: ' + (nextSeg.phase === 'rest' ? 'Rest' : nextSeg.label)
       ]) : null
     ]);
-    player.appendChild(band);
+    player.appendChild(band2);
 
     var stats = el('div', { class: 'player-stats' }, [
       el('div', { class: 'stat' }, [
-        el('div', { class: 'stat-value stat-round' }, [String(seg.round)]),
-        el('div', { class: 'stat-label' }, ['Round of ' + seg.totalRounds])
+        el('div', { class: 'stat-value stat-round' }, ['Set ' + seg.setNumber]),
+        el('div', { class: 'stat-label' }, ['of ' + seg.totalSets + ' sets'])
       ]),
       el('button', {
         class: 'play-btn', 'aria-label': p.running ? 'Pause' : 'Resume',
