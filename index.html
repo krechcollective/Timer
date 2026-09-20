@@ -373,30 +373,12 @@
     border-radius: 16px;
     padding: 20px 20px 18px;
     margin-bottom: 8px;
-    overflow: hidden;
-    color: #ffffff;
-    background:
-      linear-gradient(100deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.05) 100%),
-      repeating-linear-gradient(115deg, #2b2b2e 0 2px, #232325 2px 46px),
-      linear-gradient(160deg, #3a3a3d, #141416 70%);
-    isolation: isolate;
-  }
-
-  .dash-card::after {
-    content: '';
-    position: absolute;
-    left: 8%;
-    top: 0;
-    bottom: 0;
-    width: 6%;
-    background: repeating-linear-gradient(#e8e6df 0 22px, transparent 22px 44px);
-    transform: skewX(-18deg);
-    opacity: 0.55;
-    z-index: -1;
+    color: #0a0a0a;
+    background: var(--accent);
   }
 
   .dash-card-hit {
-    box-shadow: 0 0 0 3px var(--accent) inset;
+    box-shadow: 0 0 0 3px #0a0a0a inset;
   }
 
   .dash-eyebrow {
@@ -409,7 +391,7 @@
     width: 16px;
     height: 3px;
     border-radius: 2px;
-    background: var(--accent);
+    background: #0a0a0a;
     flex-shrink: 0;
   }
   .dash-eyebrow-label {
@@ -417,35 +399,35 @@
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #ffffff;
+    color: #0a0a0a;
   }
 
   .dash-big {
     font-family: 'Anton', 'Arial Narrow', sans-serif; font-weight: 400; text-transform: uppercase;
     font-size: clamp(2.8rem, 13vw, 3.6rem);
     line-height: 1;
-    color: #ffffff;
+    color: #0a0a0a;
   }
   .dash-label {
     font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.75);
+    color: rgba(10,10,10,0.7);
     margin-top: 4px;
   }
 
   .dash-progress-track {
     width: 100%;
     height: 5px;
-    background: rgba(255,255,255,0.22);
+    background: rgba(10,10,10,0.18);
     border-radius: 3px;
     overflow: hidden;
     margin-top: 16px;
   }
   .dash-progress-fill {
     height: 100%;
-    background: var(--accent);
+    background: #0a0a0a;
     border-radius: 3px;
     transition: width 0.4s ease;
   }
@@ -457,15 +439,15 @@
     margin-top: 16px;
     background: none;
     border: none;
-    color: #ffffff;
+    color: #0a0a0a;
     cursor: pointer;
     padding: 0;
     font-size: 0.86rem;
     font-weight: 700;
   }
-  .dash-footer .icon { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; }
-  .dash-footer .icon-chevron { width: 16px; height: 16px; color: rgba(255,255,255,0.7); margin-left: 2px; }
-  .dash-footer:hover { opacity: 0.85; }
+  .dash-footer .icon { width: 18px; height: 18px; color: #0a0a0a; flex-shrink: 0; }
+  .dash-footer .icon-chevron { width: 16px; height: 16px; color: rgba(10,10,10,0.6); margin-left: 2px; }
+  .dash-footer:hover { opacity: 0.7; }
 
   /* ---------- Share / paste overlay ---------- */
 
