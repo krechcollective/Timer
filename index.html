@@ -621,6 +621,85 @@
   .name-card input:focus { outline: none; }
   .name-card input::placeholder { color: var(--ink-faint); }
 
+  .mode-switch {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .mode-switch-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 12px 10px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .mode-switch-btn strong { font-size: 0.88rem; color: inherit; }
+  .mode-switch-btn span { font-size: 0.68rem; color: inherit; opacity: 0.75; text-align: center; }
+  .mode-switch-btn.active {
+    border-color: #0a0a0a;
+    background: #0a0a0a;
+    color: #ffffff;
+  }
+  .mode-switch-btn.active span { color: rgba(255,255,255,0.7); }
+
+  .pace-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pace-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .pace-card-title { font-weight: 800; font-size: 0.92rem; }
+  .pace-card-sub { font-size: 0.74rem; color: var(--ink-soft); margin-top: 2px; }
+
+  .toggle-switch {
+    width: 46px;
+    height: 27px;
+    border-radius: 999px;
+    background: var(--border);
+    border: none;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    transition: background 0.15s ease;
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2.5px;
+    left: 2.5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    transition: transform 0.15s ease;
+  }
+  .toggle-switch.on { background: var(--accent); }
+  .toggle-switch.on::after { transform: translateX(19px); }
+
+  .pace-interval-row { display: flex; align-items: center; gap: 10px; }
+  .pace-interval-row .stepper { flex: 1; }
+  .pace-interval-row .stepper-value { font-size: 1rem; }
+
   .section-hint {
     color: var(--ink-soft);
     font-size: 0.78rem;
@@ -921,6 +1000,49 @@
   .phase-next { font-weight: 700; font-size: 0.78rem; letter-spacing: 0.05em; opacity: 0.6; margin-top: 6px; text-transform: uppercase; }
   .phase-instructions { font-weight: 700; font-size: 0.85rem; opacity: 0.65; margin-top: 2px; }
 
+  .weight-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px auto 0;
+    background: rgba(10,10,10,0.08);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    color: #0a0a0a;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .weight-chip .icon { width: 15px; height: 15px; }
+  .weight-chip:hover { background: rgba(10,10,10,0.14); }
+
+  .recap-list { width: 100%; max-width: 360px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+  .recap-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .recap-name { flex: 1; text-align: left; font-weight: 700; font-size: 0.88rem; min-width: 0; color: var(--ink); }
+  .recap-input {
+    width: 78px;
+    font: inherit;
+    font-weight: 800;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .recap-unit { font-size: 0.72rem; color: var(--ink-soft); font-weight: 700; }
+
   .phase-progress-track {
     width: 100%;
     max-width: 320px;
@@ -1071,6 +1193,34 @@
       cursor.setDate(cursor.getDate() - 1);
     }
     return streak;
+  }
+
+  // ---------------- weight memory (last weight used per exercise) ----------------
+
+  var WEIGHTS_KEY = 'interval-coach-last-weights';
+
+  function weightKey(exerciseName) {
+    return (exerciseName || '').trim().toLowerCase();
+  }
+
+  function loadWeights() {
+    try {
+      var raw = localStorage.getItem(WEIGHTS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return {};
+  }
+
+  function saveWeight(exerciseName, weight) {
+    var all = loadWeights();
+    all[weightKey(exerciseName)] = weight;
+    try { localStorage.setItem(WEIGHTS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+
+  function lastWeightFor(exerciseName) {
+    var all = loadWeights();
+    var v = all[weightKey(exerciseName)];
+    return (v === undefined || v === null) ? null : v;
   }
 
   function sampleWorkouts() {
@@ -1293,12 +1443,56 @@
     };
   })();
 
+  // ---------------- pace ticker (subtle periodic pulse for self-paced sessions) ----------------
+
+  var paceTicker = (function () {
+    var ctx = null;
+    var timer = null;
+    function getCtx() {
+      if (!ctx) {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) ctx = new Ctx();
+      }
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function pulse() {
+      var c = getCtx();
+      if (!c) return;
+      var osc = c.createOscillator();
+      var gain = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 320;
+      gain.gain.setValueAtTime(0.0001, c.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.14, c.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.16);
+      osc.connect(gain);
+      gain.connect(c.destination);
+      osc.start(c.currentTime);
+      osc.stop(c.currentTime + 0.18);
+    }
+    return {
+      start: function (intervalSeconds) {
+        this.stop();
+        getCtx();
+        timer = setInterval(pulse, Math.max(5, intervalSeconds) * 1000);
+      },
+      stop: function () {
+        if (timer) { clearInterval(timer); timer = null; }
+      }
+    };
+  })();
+
   // ---------------- segment engine ----------------
   // Every exercise carries its own set count and its own rest — exercises run
   // one after another (not a shared circuit/round), which matches how a real
   // strength workout is structured: finish all sets of an exercise, then move on.
 
   function buildSegments(workout) {
+    return workout.mode === 'selfpaced' ? buildSelfPacedSegments(workout) : buildGuidedSegments(workout);
+  }
+
+  function buildGuidedSegments(workout) {
     var segments = [];
     var totalExercises = workout.exercises.length;
     if (!totalExercises) return segments;
@@ -1306,7 +1500,8 @@
     segments.push({
       phase: 'prepare', label: 'Get ready', seconds: PREPARE_SECONDS,
       announce: 'Get ready', exerciseNumber: 1, totalExercises: totalExercises,
-      setNumber: 1, totalSets: Math.max(1, workout.exercises[0].sets || 1)
+      setNumber: 1, totalSets: Math.max(1, workout.exercises[0].sets || 1),
+      exerciseId: workout.exercises[0].id, exerciseName: workout.exercises[0].name
     });
 
     workout.exercises.forEach(function (exercise, exerciseIndex) {
@@ -1322,14 +1517,16 @@
             phase: 'work', label: exercise.name, seconds: exercise.work,
             announce: 'Begin, ' + exercise.name + ', ' + setLabel,
             exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
-            setNumber: setIndex + 1, totalSets: totalSets
+            setNumber: setIndex + 1, totalSets: totalSets,
+            exerciseId: exercise.id, exerciseName: exercise.name
           });
         } else {
           segments.push({
             phase: 'manual', label: exercise.name, seconds: 0,
             announce: exercise.name + ', ' + setLabel,
             exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
-            setNumber: setIndex + 1, totalSets: totalSets
+            setNumber: setIndex + 1, totalSets: totalSets,
+            exerciseId: exercise.id, exerciseName: exercise.name
           });
         }
 
@@ -1345,9 +1542,33 @@
             phase: 'rest', label: 'Rest', seconds: exercise.rest,
             announce: nextLabel ? ('Rest. Next up, ' + nextLabel) : 'Rest',
             exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
-            setNumber: setIndex + 1, totalSets: totalSets
+            setNumber: setIndex + 1, totalSets: totalSets,
+            exerciseId: exercise.id, exerciseName: exercise.name
           });
         }
+      }
+    });
+
+    return segments;
+  }
+
+  // Self-paced: no timers at all, purely a "what's next" tracker the lifter
+  // taps through at their own speed — no work/rest durations, no auto-advance.
+  function buildSelfPacedSegments(workout) {
+    var segments = [];
+    var totalExercises = workout.exercises.length;
+    if (!totalExercises) return segments;
+
+    workout.exercises.forEach(function (exercise, exerciseIndex) {
+      var totalSets = Math.max(1, exercise.sets || 1);
+      for (var setIndex = 0; setIndex < totalSets; setIndex++) {
+        segments.push({
+          phase: 'selfpaced', label: exercise.name, seconds: 0,
+          announce: exercise.name + ', set ' + (setIndex + 1) + ' of ' + totalSets,
+          exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
+          setNumber: setIndex + 1, totalSets: totalSets,
+          exerciseId: exercise.id, exerciseName: exercise.name
+        });
       }
     });
 
@@ -1493,7 +1714,9 @@
               w.exercises.length + ' exercise' + (w.exercises.length === 1 ? '' : 's') + ' · ' +
               totalSetsCount(w) + ' sets total'
             ]),
-            el('div', { class: 'workout-card-meta' }, [fmtClock(totalDuration(w)) + ' min. time'])
+            el('div', { class: 'workout-card-meta' }, [
+              w.mode === 'selfpaced' ? 'Self-paced · untimed' : (fmtClock(totalDuration(w)) + ' min. time')
+            ])
           ]),
           el('div', { class: 'workout-card-chevron' }, [icon('chevronRight')])
         ]);
@@ -1680,7 +1903,7 @@
 
   function emptyExercise() { return { id: uid('ex'), name: '', sets: 3, work: 0, rest: 60 }; }
   function emptyWorkout() {
-    return { id: uid('wk'), name: '', exercises: [emptyExercise()] };
+    return { id: uid('wk'), name: '', mode: 'guided', paceEnabled: false, paceInterval: 60, exercises: [emptyExercise()] };
   }
 
   function startNewWorkout() {
@@ -1691,7 +1914,11 @@
   }
 
   function startEditWorkout(w) {
-    state.editing = JSON.parse(JSON.stringify(w));
+    var copy = JSON.parse(JSON.stringify(w));
+    if (!copy.mode) copy.mode = 'guided';
+    if (typeof copy.paceEnabled !== 'boolean') copy.paceEnabled = false;
+    if (!copy.paceInterval) copy.paceInterval = 60;
+    state.editing = copy;
     state.editingIsNew = false;
     state.screen = 'editor';
     render();
@@ -1716,12 +1943,49 @@
     nameCard.appendChild(nameInput);
     scroll.appendChild(nameCard);
 
+    scroll.appendChild(el('div', { class: 'mode-switch' }, [
+      el('button', {
+        class: 'mode-switch-btn' + (w.mode !== 'selfpaced' ? ' active' : ''),
+        onclick: function () { w.mode = 'guided'; render(); }
+      }, [el('strong', {}, ['Guided']), el('span', {}, ['Timed work & rest, spoken cues'])]),
+      el('button', {
+        class: 'mode-switch-btn' + (w.mode === 'selfpaced' ? ' active' : ''),
+        onclick: function () { w.mode = 'selfpaced'; render(); }
+      }, [el('strong', {}, ['Self-paced']), el('span', {}, ['No timers — tap to move on'])])
+    ]));
+
+    if (w.mode === 'selfpaced') {
+      var toggleBtn = el('button', { class: 'toggle-switch' + (w.paceEnabled ? ' on' : '') });
+      var intervalStepper = stepper('Every', w.paceInterval + 's', null, function (delta, valueEl) {
+        w.paceInterval = Math.max(15, Math.min(300, w.paceInterval + delta * 15));
+        valueEl.textContent = w.paceInterval + 's';
+      });
+      intervalStepper.hidden = !w.paceEnabled;
+      toggleBtn.addEventListener('click', function () {
+        w.paceEnabled = !w.paceEnabled;
+        toggleBtn.classList.toggle('on', w.paceEnabled);
+        intervalStepper.hidden = !w.paceEnabled;
+      });
+      scroll.appendChild(el('div', { class: 'pace-card' }, [
+        el('div', { class: 'pace-card-row' }, [
+          el('div', {}, [
+            el('div', { class: 'pace-card-title' }, ['Pace check-ins']),
+            el('div', { class: 'pace-card-sub' }, ['A soft pulse to keep a steady tempo — not an alarm.'])
+          ]),
+          toggleBtn
+        ]),
+        el('div', { class: 'pace-interval-row' }, [intervalStepper])
+      ]));
+    }
+
     scroll.appendChild(el('div', { class: 'section-label-row' }, [
       el('div', { class: 'section-label' }, ['Exercises']),
       el('div', { class: 'rule' })
     ]));
     scroll.appendChild(el('div', { class: 'section-hint' }, [
-      'Each exercise runs all its sets before moving to the next. Set Work to 0 for a self-paced lift — tap "Done" after each set instead of a countdown.'
+      w.mode === 'selfpaced'
+        ? 'No timers here — you’ll tap "Next" to move through each set at your own pace.'
+        : 'Each exercise runs all its sets before moving to the next. Set Work to 0 for a self-paced lift — tap "Done" after each set instead of a countdown.'
     ]));
 
     var exerciseList = el('div', { id: 'exercise-list' });
@@ -1741,9 +2005,8 @@
     screen.appendChild(scroll);
 
     var footer = el('div', { class: 'editor-footer' });
-    var totalSpan = el('span', { class: 'total-time', id: 'total-time' }, [
-      'Min. time: ', el('strong', {}, [fmtClock(totalDuration(w))])
-    ]);
+    var totalSpan = el('span', { class: 'total-time', id: 'total-time' });
+    setTotalText(totalSpan, w);
     var saveBtn = el('button', {
       class: 'save-btn', id: 'save-btn',
       onclick: function () {
@@ -1761,11 +2024,7 @@
     app.appendChild(screen);
 
     function updateTotal() {
-      document.getElementById('total-time').innerHTML = '';
-      document.getElementById('total-time').append('Min. time: ');
-      var strong = document.createElement('strong');
-      strong.textContent = fmtClock(totalDuration(w));
-      document.getElementById('total-time').appendChild(strong);
+      setTotalText(document.getElementById('total-time'), w);
     }
     function updateSaveState() {
       var ok = w.name.trim().length > 0 && w.exercises.every(function (ex) { return ex.name.trim().length > 0; });
@@ -1774,6 +2033,17 @@
     updateSaveState();
     window.__editorUpdateTotal = updateTotal;
     window.__editorUpdateSaveState = updateSaveState;
+  }
+
+  function setTotalText(node, w) {
+    node.innerHTML = '';
+    if (w.mode === 'selfpaced') {
+      node.appendChild(el('strong', {}, ['Self-paced']));
+      node.append(' — untimed');
+    } else {
+      node.append('Min. time: ');
+      node.appendChild(el('strong', {}, [fmtClock(totalDuration(w))]));
+    }
   }
 
   function stepper(labelText, value, hint, onChange) {
@@ -1818,19 +2088,23 @@
         window.__editorUpdateTotal();
       });
 
-      var workStepper = stepper('Work', ex.work > 0 ? ex.work + 's' : 'Self-paced', null, function (delta, valueEl) {
-        ex.work = Math.max(0, ex.work + delta * 5);
-        valueEl.textContent = ex.work > 0 ? ex.work + 's' : 'Self-paced';
-        window.__editorUpdateTotal();
-      });
+      var stepperChildren = [setsStepper];
 
-      var restStepper = stepper('Rest', ex.rest + 's', null, function (delta, valueEl) {
-        ex.rest = Math.max(0, ex.rest + delta * 5);
-        valueEl.textContent = ex.rest + 's';
-        window.__editorUpdateTotal();
-      });
+      if (w.mode !== 'selfpaced') {
+        var workStepper = stepper('Work', ex.work > 0 ? ex.work + 's' : 'Self-paced', null, function (delta, valueEl) {
+          ex.work = Math.max(0, ex.work + delta * 5);
+          valueEl.textContent = ex.work > 0 ? ex.work + 's' : 'Self-paced';
+          window.__editorUpdateTotal();
+        });
+        var restStepper = stepper('Rest', ex.rest + 's', null, function (delta, valueEl) {
+          ex.rest = Math.max(0, ex.rest + delta * 5);
+          valueEl.textContent = ex.rest + 's';
+          window.__editorUpdateTotal();
+        });
+        stepperChildren.push(workStepper, restStepper);
+      }
 
-      var steppers = el('div', { class: 'stepper-row' }, [setsStepper, workStepper, restStepper]);
+      var steppers = el('div', { class: 'stepper-row' }, stepperChildren);
 
       container.appendChild(el('div', { class: 'exercise-card' }, [head, steppers]));
     });
@@ -1848,10 +2122,85 @@
       running: false,
       started: false,
       finished: false,
-      lastAnnouncedCount: null
+      lastAnnouncedCount: null,
+      weights: {}
     };
     state.screen = 'player';
     render();
+  }
+
+  function getSessionWeight(exerciseName) {
+    var key = weightKey(exerciseName);
+    var p = state.playing;
+    if (p && p.weights && p.weights[key] !== undefined && p.weights[key] !== null) return p.weights[key];
+    return lastWeightFor(exerciseName);
+  }
+
+  function setSessionWeight(exerciseName, value) {
+    var p = state.playing;
+    if (p) { p.weights = p.weights || {}; p.weights[weightKey(exerciseName)] = value; }
+    if (value !== null && value !== undefined) saveWeight(exerciseName, value);
+  }
+
+  function weightChip(exerciseName) {
+    var current = getSessionWeight(exerciseName);
+    var label = (current !== null && current !== undefined) ? (current + ' lb · edit') : 'Add weight';
+    return el('button', { class: 'weight-chip', onclick: function () { openWeightOverlay(exerciseName); } }, [icon('dumbbell'), label]);
+  }
+
+  function openWeightOverlay(exerciseName) {
+    var current = getSessionWeight(exerciseName);
+    var overlay = el('div', { class: 'ic-overlay', onclick: function (e) { if (e.target === overlay) overlay.remove(); } });
+    var input = el('input', { type: 'number', min: '0', value: (current !== null && current !== undefined) ? String(current) : '' });
+    input.style.fontSize = '1.4rem';
+    input.style.textAlign = 'center';
+
+    var box = el('div', { class: 'ic-overlay-box' }, [
+      el('span', { class: 'field-label' }, [exerciseName + ' — weight (lb)']),
+      input,
+      el('div', { class: 'ic-overlay-actions' }, [
+        el('button', { class: 'ic-btn-secondary', onclick: function () { overlay.remove(); } }, ['Cancel']),
+        el('button', {
+          class: 'save-btn',
+          onclick: function () {
+            var v = input.value.trim() === '' ? null : Number(input.value);
+            setSessionWeight(exerciseName, v);
+            overlay.remove();
+            renderPlayer();
+          }
+        }, ['Save'])
+      ])
+    ]);
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    input.focus();
+    input.select();
+  }
+
+  function buildRecapList(workout) {
+    var seen = {};
+    var rows = [];
+    workout.exercises.forEach(function (ex) {
+      var key = weightKey(ex.name);
+      if (seen[key]) return;
+      seen[key] = true;
+      var current = getSessionWeight(ex.name);
+      var input = el('input', {
+        class: 'recap-input', type: 'number', min: '0', placeholder: '—',
+        value: (current !== null && current !== undefined) ? String(current) : ''
+      });
+      input.addEventListener('input', function (e) {
+        var v = e.target.value.trim() === '' ? null : Number(e.target.value);
+        setSessionWeight(ex.name, v);
+      });
+      rows.push(el('div', { class: 'recap-row' }, [
+        el('div', { class: 'recap-name' }, [ex.name]),
+        input,
+        el('div', { class: 'recap-unit' }, ['lb'])
+      ]));
+    });
+    return el('div', { class: 'recap-list' }, rows);
   }
 
   function stopTicking() {
@@ -1882,32 +2231,35 @@
       p.finished = true;
       p.running = false;
       stopTicking();
+      paceTicker.stop();
       recordCompletion();
-      announcer.speak('Workout complete. Great work.');
+      if (p.workout.mode !== 'selfpaced') announcer.speak('Workout complete. Great work.');
       return;
     }
     var seg = p.segments[idx];
     p.index = idx;
     p.remaining = seg.seconds || 0;
     p.lastAnnouncedCount = null;
-    announcer.speak(seg.announce);
-    if (seg.phase === 'manual') {
+    if (seg.phase === 'manual' || seg.phase === 'selfpaced') {
       p.running = false;
       stopTicking();
+      if (seg.phase === 'manual') announcer.speak(seg.announce);
     } else {
+      announcer.speak(seg.announce);
       p.running = true;
       startTicking();
     }
   }
 
   function phaseClass(phase) {
-    if (phase === 'work' || phase === 'manual') return phase;
+    if (phase === 'work') return 'work';
+    if (phase === 'manual' || phase === 'selfpaced') return 'manual';
     if (phase === 'rest') return 'rest';
     return 'prepare';
   }
 
   function phaseHeading(phase, seg) {
-    if (phase === 'manual') return 'Set ' + seg.setNumber + ' of ' + seg.totalSets;
+    if (phase === 'manual' || phase === 'selfpaced') return 'Set ' + seg.setNumber + ' of ' + seg.totalSets;
     if (phase === 'work') return 'Work';
     if (phase === 'rest') return 'Rest';
     return 'Prepare';
@@ -1921,6 +2273,7 @@
 
     var closeAction = function () {
       stopTicking();
+      paceTicker.stop();
       announcer.cancel();
       state.screen = 'workouts';
       render();
@@ -1944,25 +2297,40 @@
       var summary = el('div', { class: 'presummary' }, [
         presummaryItem(String(w.exercises.length), 'Exercises'),
         presummaryItem(String(totalSetsCount(w)), 'Total sets'),
-        presummaryItem(fmtClock(totalDuration(w)), 'Min. time')
+        w.mode === 'selfpaced'
+          ? presummaryItem('—', 'Self-paced')
+          : presummaryItem(fmtClock(totalDuration(w)), 'Min. time')
       ]);
       player.appendChild(summary);
 
       var previewList = el('div', { class: 'preview-list' });
       w.exercises.forEach(function (ex, i) {
-        var workText = ex.work > 0 ? (ex.work + 's work') : 'self-paced';
+        var timesText;
+        if (w.mode === 'selfpaced') {
+          timesText = ex.sets + ' set' + (ex.sets === 1 ? '' : 's') + ' · self-paced';
+        } else {
+          var workText = ex.work > 0 ? (ex.work + 's work') : 'self-paced';
+          timesText = ex.sets + ' sets · ' + workText + ' · ' + ex.rest + 's rest';
+        }
         previewList.appendChild(el('div', { class: 'preview-row' }, [
           el('span', { class: 'idx' }, [String(i + 1)]),
           el('span', { class: 'name' }, [ex.name]),
-          el('span', { class: 'times' }, [ex.sets + ' sets · ' + workText + ' · ' + ex.rest + 's rest'])
+          el('span', { class: 'times' }, [timesText])
         ]));
       });
       player.appendChild(previewList);
+
+      if (w.mode === 'selfpaced' && w.paceEnabled) {
+        player.appendChild(el('div', { class: 'section-hint', style: 'text-align:center;padding:0 20px;' }, [
+          'A soft pulse will pace you every ' + w.paceInterval + 's while this runs.'
+        ]));
+      }
 
       player.appendChild(el('button', {
         class: 'start-btn',
         onclick: function () {
           p.started = true;
+          if (w.mode === 'selfpaced' && w.paceEnabled) paceTicker.start(w.paceInterval);
           advanceToSegment(0);
           renderPlayer();
         }
@@ -1975,7 +2343,9 @@
     if (p.finished) {
       player.appendChild(el('div', { class: 'finished-screen' }, [
         el('div', { class: 'finished-heading' }, ['WORKOUT COMPLETE']),
-        el('button', { class: 'start-btn', style: 'margin:0;', onclick: closeAction }, ['DONE'])
+        el('div', { class: 'section-hint', style: 'text-align:center;' }, ['Log the weights you used, so they’re ready next time.']),
+        buildRecapList(w),
+        el('button', { class: 'start-btn', style: 'margin:8px 20px 0;', onclick: closeAction }, ['DONE'])
       ]));
       app.appendChild(player);
       return;
@@ -1983,7 +2353,7 @@
 
     var seg = p.segments[p.index];
     var nextSeg = p.segments[p.index + 1];
-    var isActiveStage = seg.phase === 'work' || seg.phase === 'manual';
+    var isActiveStage = seg.phase === 'work' || seg.phase === 'manual' || seg.phase === 'selfpaced';
     if (isActiveStage) player.classList.add('stage-active');
 
     var topline = el('div', { class: 'phase-topline' }, [
@@ -1997,18 +2367,22 @@
       ])
     ]);
 
-    if (seg.phase === 'manual') {
+    if (seg.phase === 'manual' || seg.phase === 'selfpaced') {
+      var isSelfPaced = seg.phase === 'selfpaced';
       var band = el('div', { class: 'phase-band manual' }, [
         topline,
-        el('div', { class: 'phase-label' }, ['Self-paced set']),
+        el('div', { class: 'phase-label' }, [isSelfPaced ? 'Up now' : 'Self-paced set']),
         el('div', { class: 'phase-clock' }, [seg.setNumber + '/' + seg.totalSets]),
         el('div', { class: 'phase-exercise' }, [seg.label]),
-        el('div', { class: 'phase-instructions' }, ['Do your reps, then tap below'])
+        weightChip(seg.exerciseName),
+        el('div', { class: 'phase-instructions' }, [isSelfPaced ? 'Tap next when you’re ready' : 'Do your reps, then tap below'])
       ]);
       player.appendChild(band);
 
       var isVeryLastSegment = p.index === p.segments.length - 1;
-      var ctaLabel = isVeryLastSegment ? 'FINISH WORKOUT' : (nextSeg && nextSeg.phase === 'rest' ? 'DONE — START REST' : 'DONE — NEXT UP');
+      var ctaLabel = isVeryLastSegment
+        ? 'FINISH WORKOUT'
+        : (isSelfPaced ? 'NEXT' : (nextSeg && nextSeg.phase === 'rest' ? 'DONE — START REST' : 'DONE — NEXT UP'));
       player.appendChild(el('button', {
         class: 'start-btn',
         onclick: function () {
@@ -2028,6 +2402,7 @@
       el('div', { class: 'phase-label' }, [phaseHeading(seg.phase, seg).toUpperCase()]),
       el('div', { class: 'phase-clock' }, [fmtClock(p.remaining)]),
       seg.phase !== 'prepare' ? el('div', { class: 'phase-exercise' }, [seg.label]) : null,
+      seg.phase !== 'prepare' ? weightChip(seg.exerciseName) : null,
       nextSeg ? el('div', { class: 'phase-next' }, [
         'Up next: ' + (nextSeg.phase === 'rest' ? 'Rest' : nextSeg.label)
       ]) : null,
