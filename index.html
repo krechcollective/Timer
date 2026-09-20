@@ -205,6 +205,82 @@
     letter-spacing: 0.02em;
   }
 
+  /* ---------- Home dashboard card ---------- */
+
+  .dash-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px 20px;
+    margin-bottom: 24px;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+
+  .dash-card-hit {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .dash-card-hit .dash-topstat-value,
+  .dash-card-hit .dash-big { color: #0a0a0a; }
+  .dash-card-hit .dash-topstat-label,
+  .dash-card-hit .dash-label { color: rgba(10, 10, 10, 0.6); }
+
+  .dash-topline {
+    display: flex;
+    gap: 30px;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(10, 10, 10, 0.12);
+  }
+
+  .dash-topstat { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .dash-topstat-value {
+    font-family: 'Anton', 'Arial Narrow', sans-serif; font-weight: 400; text-transform: uppercase;
+    font-size: 1.3rem;
+    color: var(--ink);
+  }
+  .dash-topstat-label { font-size: 0.62rem; letter-spacing: 0.05em; color: var(--ink-soft); text-transform: uppercase; }
+
+  .dash-main { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+  .dash-big {
+    font-family: 'Anton', 'Arial Narrow', sans-serif; font-weight: 400; text-transform: uppercase;
+    font-size: clamp(2.6rem, 12vw, 3.4rem);
+    line-height: 1;
+    color: var(--ink);
+    transform: skewX(-6deg);
+    display: inline-block;
+  }
+  .dash-label { font-size: 0.72rem; letter-spacing: 0.05em; color: var(--ink-soft); text-transform: uppercase; margin-top: 4px; }
+
+  .dash-progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(10, 10, 10, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 14px;
+  }
+  .dash-progress-fill {
+    height: 100%;
+    background: var(--ink);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .dash-card-hit .dash-progress-fill { background: #0a0a0a; }
+
+  .dash-edit-link {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    padding: 10px 0 0;
+    cursor: pointer;
+  }
+  .dash-card-hit .dash-edit-link { color: rgba(10, 10, 10, 0.65); }
+
   /* ---------- Share / paste overlay ---------- */
 
   .ic-overlay {
@@ -650,6 +726,8 @@
   'use strict';
 
   var STORAGE_KEY = 'interval-coach-workouts-v2';
+  var GOAL_KEY = 'interval-coach-weekly-goal';
+  var LOG_KEY = 'interval-coach-completion-log';
   var PREPARE_SECONDS = 5;
   var COUNT_FROM = 5;
 
@@ -665,6 +743,73 @@
 
   function saveWorkouts(list) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  function loadWeeklyGoal() {
+    try {
+      var raw = localStorage.getItem(GOAL_KEY);
+      var n = raw ? parseInt(raw, 10) : 4;
+      return Number.isFinite(n) && n > 0 ? n : 4;
+    } catch (e) { return 4; }
+  }
+
+  function saveWeeklyGoal(n) {
+    try { localStorage.setItem(GOAL_KEY, String(n)); } catch (e) {}
+  }
+
+  function loadCompletionLog() {
+    try {
+      var raw = localStorage.getItem(LOG_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return [];
+  }
+
+  function saveCompletionLog(log) {
+    try { localStorage.setItem(LOG_KEY, JSON.stringify(log)); } catch (e) {}
+  }
+
+  function isoDate(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function recordCompletion() {
+    var log = loadCompletionLog();
+    log.push(isoDate(new Date()));
+    if (log.length > 400) log = log.slice(log.length - 400);
+    saveCompletionLog(log);
+  }
+
+  // Calendar week starting Monday.
+  function startOfWeek(d) {
+    var day = d.getDay(); // 0 = Sunday
+    var diff = (day === 0 ? -6 : 1 - day);
+    var start = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
+    return start;
+  }
+
+  function weekCompletionCount(log) {
+    var start = startOfWeek(new Date());
+    var startIso = isoDate(start);
+    var uniqueDays = {};
+    log.forEach(function (dateStr) {
+      if (dateStr >= startIso) uniqueDays[dateStr] = true;
+    });
+    return Object.keys(uniqueDays).length;
+  }
+
+  function currentStreak(log) {
+    var days = {};
+    log.forEach(function (d) { days[d] = true; });
+    var streak = 0;
+    var cursor = new Date();
+    // Today doesn't have to be logged yet for the streak to still be "alive".
+    if (!days[isoDate(cursor)]) cursor.setDate(cursor.getDate() - 1);
+    while (days[isoDate(cursor)]) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
   }
 
   function sampleWorkouts() {
@@ -990,6 +1135,10 @@
       ])
     ]));
 
+    scroll.appendChild(renderDashboardCard());
+
+    scroll.appendChild(el('div', { class: 'section-label' }, ['Your workouts']));
+
     if (state.workouts.length === 0) {
       scroll.appendChild(el('div', { class: 'empty-state' }, [
         'No workouts yet. Build one with your own exercises — each gets its own number of sets, and its own rest time.'
@@ -1016,6 +1165,67 @@
 
     screen.appendChild(scroll);
     app.appendChild(screen);
+  }
+
+  function renderDashboardCard() {
+    var log = loadCompletionLog();
+    var goal = loadWeeklyGoal();
+    var weekCount = weekCompletionCount(log);
+    var streak = currentStreak(log);
+    var pct = Math.min(100, Math.round((weekCount / goal) * 100));
+    var hitGoal = weekCount >= goal;
+
+    var card = el('div', { class: 'dash-card' + (hitGoal ? ' dash-card-hit' : '') }, [
+      el('div', { class: 'dash-topline' }, [
+        el('div', { class: 'dash-topstat' }, [
+          el('div', { class: 'dash-topstat-value' }, [String(streak)]),
+          el('div', { class: 'dash-topstat-label' }, ['Day streak'])
+        ]),
+        el('div', { class: 'dash-topstat' }, [
+          el('div', { class: 'dash-topstat-value' }, [String(log.length)]),
+          el('div', { class: 'dash-topstat-label' }, ['All-time'])
+        ])
+      ]),
+      el('div', { class: 'dash-main' }, [
+        el('div', { class: 'dash-big' }, [String(weekCount) + '/' + String(goal)]),
+        el('div', { class: 'dash-label' }, ['Workouts this week'])
+      ]),
+      el('div', { class: 'dash-progress-track' }, [
+        el('div', { class: 'dash-progress-fill', style: 'width:' + pct + '%;' })
+      ]),
+      el('button', { class: 'dash-edit-link', onclick: openGoalOverlay }, ['Edit weekly goal'])
+    ]);
+
+    return card;
+  }
+
+  function openGoalOverlay() {
+    var overlay = el('div', { class: 'ic-overlay', onclick: function (e) { if (e.target === overlay) overlay.remove(); } });
+    var input = el('input', { type: 'number', min: '1', value: String(loadWeeklyGoal()) });
+    input.style.fontSize = '1.4rem';
+    input.style.textAlign = 'center';
+
+    var box = el('div', { class: 'ic-overlay-box' }, [
+      el('span', { class: 'field-label' }, ['Workouts per week goal']),
+      input,
+      el('div', { class: 'ic-overlay-actions' }, [
+        el('button', { class: 'ic-btn-secondary', onclick: function () { overlay.remove(); } }, ['Cancel']),
+        el('button', {
+          class: 'save-btn',
+          onclick: function () {
+            var n = Math.max(1, parseInt(input.value, 10) || 1);
+            saveWeeklyGoal(n);
+            overlay.remove();
+            render();
+          }
+        }, ['Save goal'])
+      ])
+    ]);
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    input.focus();
+    input.select();
   }
 
   function deleteWorkout(id) {
@@ -1209,6 +1419,7 @@
       p.finished = true;
       p.running = false;
       stopTicking();
+      recordCompletion();
       announcer.speak('Workout complete. Great work.');
       return;
     }
