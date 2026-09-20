@@ -542,10 +542,18 @@
 
   /* ---------- Editor ---------- */
 
+  .editor-shell {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
   .editor-scroll {
     flex: 1;
     overflow-y: auto;
-    padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(32px + env(safe-area-inset-bottom, 0px));
+    padding: 4px 20px calc(140px + env(safe-area-inset-bottom, 0px));
     max-width: 640px;
     margin: 0 auto;
     width: 100%;
@@ -554,159 +562,242 @@
   .editor-topbar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 14px;
+    flex-shrink: 0;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 14px;
   }
 
   .editor-topbar h2 {
     font-family: 'Anton', 'Arial Narrow', sans-serif; font-weight: 400; text-transform: uppercase;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     margin: 0;
   }
 
   .back-link {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
     background: none;
-    border: none;
-    color: var(--ink-soft);
-    font-size: 1.3rem;
-    cursor: pointer;
-    padding: 4px 8px 4px 0;
-  }
-
-  .field {
+    color: var(--ink);
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 16px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+  }
+  .back-link:hover { border-color: var(--ink); }
+  .back-link .icon { width: 18px; height: 18px; }
+
+  .name-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
   }
 
   .field span.field-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
     color: var(--ink-soft);
     text-transform: uppercase;
+    margin-bottom: 6px;
   }
 
-  .field input, .field select {
+  .name-card input {
     font: inherit;
-    font-size: 1rem;
-    padding: 11px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface);
+    font-weight: 800;
+    font-size: 1.2rem;
+    border: none;
+    background: none;
     color: var(--ink);
     width: 100%;
+    padding: 0;
   }
-  .field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-
-  .section-label {
-    font-family: 'Anton', 'Arial Narrow', sans-serif; font-weight: 400; text-transform: uppercase;
-    font-size: 1rem;
-    margin: 24px 0 4px;
-  }
+  .name-card input:focus { outline: none; }
+  .name-card input::placeholder { color: var(--ink-faint); }
 
   .section-hint {
     color: var(--ink-soft);
     font-size: 0.78rem;
-    margin: 0 0 12px;
+    line-height: 1.4;
+    margin: 0 0 14px;
   }
 
-  .exercise-row {
-    display: grid;
-    grid-template-columns: 18px 1fr 44px 44px 44px 32px;
-    gap: 6px;
-    align-items: center;
+  .exercise-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px;
-    margin-bottom: 8px;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
   }
 
-  .exercise-row .idx { color: var(--ink-faint); font-weight: 700; font-size: 0.85rem; text-align: center; }
+  .exercise-card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
 
-  .exercise-row input {
-    font: inherit;
-    padding: 8px 6px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
+  .exercise-card-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
     color: var(--ink);
-    width: 100%;
-    min-width: 0;
-    font-size: 0.9rem;
   }
+  .exercise-card-icon .icon { width: 19px; height: 19px; }
 
-  .exercise-row input.name-input { font-weight: 600; }
-  .exercise-row input.time-input { text-align: center; font-variant-numeric: tabular-nums; padding-left: 2px; padding-right: 2px; }
+  .exercise-card-name {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-weight: 800;
+    font-size: 1rem;
+    border: none;
+    background: none;
+    color: var(--ink);
+    padding: 0;
+  }
+  .exercise-card-name:focus { outline: none; }
+  .exercise-card-name::placeholder { color: var(--ink-faint); }
 
-  .exercise-row .remove-btn {
+  .exercise-card .remove-btn {
     background: none;
     border: none;
     color: var(--ink-faint);
-    font-size: 1rem;
     cursor: pointer;
-    padding: 6px;
+    padding: 4px;
+    flex-shrink: 0;
+    display: flex;
   }
-  .exercise-row .remove-btn:hover { color: #ff3b30; }
+  .exercise-card .remove-btn .icon { width: 16px; height: 16px; }
+  .exercise-card .remove-btn:hover { color: #ff3b30; }
 
-  .col-labels {
-    display: grid;
-    grid-template-columns: 18px 1fr 44px 44px 44px 32px;
-    gap: 6px;
-    font-size: 0.62rem;
-    color: var(--ink-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 0 10px;
-    margin-bottom: 6px;
+  .stepper-row {
+    display: flex;
+    gap: 10px;
   }
-  .col-labels span:nth-child(3), .col-labels span:nth-child(4), .col-labels span:nth-child(5) { text-align: center; }
+
+  .stepper-group { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .stepper-group-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .stepper-btn {
+    background: none;
+    border: none;
+    color: var(--ink);
+    font-family: 'Anton', 'Arial Narrow', sans-serif; font-weight: 400;
+    font-size: 1.1rem;
+    width: 32px;
+    height: 36px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stepper-btn:hover { background: var(--border); }
+  .stepper-btn:active { background: var(--accent); }
+
+  .stepper-value {
+    flex: 1;
+    text-align: center;
+    font-family: 'Anton', 'Arial Narrow', sans-serif; font-weight: 400;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    min-width: 0;
+  }
+
+  .stepper-hint {
+    font-size: 0.6rem;
+    color: var(--ink-faint);
+    text-align: center;
+    margin-top: 2px;
+  }
 
   .add-exercise-btn {
     width: 100%;
-    border: 1px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1.5px dashed var(--border);
     background: none;
     color: var(--ink-soft);
-    border-radius: 12px;
-    padding: 12px;
-    font-weight: 700;
-    font-size: 0.9rem;
+    border-radius: 14px;
+    padding: 14px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
     cursor: pointer;
     margin-top: 4px;
   }
-  .add-exercise-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .add-exercise-btn:hover { border-color: var(--accent); color: var(--ink); background: var(--accent); border-style: solid; }
+  .add-exercise-btn .icon { width: 16px; height: 16px; }
 
   .editor-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-top: 24px;
-    padding-top: 16px;
+    padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+    background: var(--surface);
     border-top: 1px solid var(--border);
+    max-width: 640px;
+    margin: 0 auto;
   }
 
   .total-time {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 700;
     color: var(--ink-soft);
     font-variant-numeric: tabular-nums;
   }
+  .total-time strong { color: var(--ink); font-weight: 800; }
 
   .save-btn {
-    border: 2px solid var(--ink);
+    border: none;
     background: var(--accent);
-    color: var(--accent-ink);
+    color: #0a0a0a;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    padding: 12px 22px;
+    padding: 13px 26px;
     border-radius: 999px;
     cursor: pointer;
     font-size: 0.85rem;
   }
-  .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
   /* ---------- Player (Nike Run Club style stat card) ---------- */
 
@@ -1300,6 +1391,9 @@
     tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M20 13.5 12.5 21 3 11.5V4a1 1 0 0 1 1-1h7.5z"/><circle cx="15" cy="8" r="1.1" fill="currentColor" stroke="none"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+    chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>',
     barChart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>',
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l1.9-1.4-2-3.4-2.2.7a7.8 7.8 0 0 0-1.7-1L15 3.6h-4l-.4 2.3a7.8 7.8 0 0 0-1.7 1l-2.2-.7-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-1.9 1.4 2 3.4 2.2-.7a7.8 7.8 0 0 0 1.7 1L11 20.4h4l.4-2.3a7.8 7.8 0 0 0 1.7-1l2.2.7 2-3.4z"/></svg>',
     runner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="14.5" cy="4.8" r="1.6" fill="currentColor" stroke="none"/><path d="M12.5 8l-2 3 3 1.8.6 5.2M8.5 20l2-4-3.2-2 1-4 4.2-1.2 2 2.4 3.3 1"/></svg>',
@@ -1606,29 +1700,28 @@
   function renderEditor() {
     app.innerHTML = '';
     var w = state.editing;
-    var screen = el('div', { class: 'screen' });
+    var screen = el('div', { class: 'editor-shell' });
     var scroll = el('div', { class: 'editor-scroll' });
 
-    scroll.appendChild(el('div', { class: 'editor-topbar' }, [
-      el('button', { class: 'back-link', onclick: function () { state.screen = 'workouts'; render(); } }, ['←']),
+    screen.appendChild(el('div', { class: 'editor-topbar' }, [
+      el('button', { class: 'back-link', onclick: function () { state.screen = 'workouts'; render(); } }, [icon('chevronLeft')]),
       el('h2', {}, [state.editingIsNew ? 'New workout' : 'Edit workout'])
     ]));
 
-    var nameField = el('div', { class: 'field' }, [
+    var nameCard = el('div', { class: 'name-card' }, [
       el('span', { class: 'field-label' }, ['Workout name'])
     ]);
     var nameInput = el('input', { placeholder: 'Push day', value: w.name });
     nameInput.addEventListener('input', function (e) { w.name = e.target.value; updateSaveState(); });
-    nameField.appendChild(nameInput);
-    scroll.appendChild(nameField);
+    nameCard.appendChild(nameInput);
+    scroll.appendChild(nameCard);
 
-    scroll.appendChild(el('div', { class: 'section-label' }, ['Exercises']));
-    scroll.appendChild(el('div', { class: 'section-hint' }, [
-      'Each exercise runs its own sets, back to back, before moving to the next. Set Work to 0 for a self-paced lift — tap "Done" after each set instead of a countdown.'
+    scroll.appendChild(el('div', { class: 'section-label-row' }, [
+      el('div', { class: 'section-label' }, ['Exercises']),
+      el('div', { class: 'rule' })
     ]));
-
-    scroll.appendChild(el('div', { class: 'col-labels' }, [
-      el('span', {}, ['']), el('span', {}, ['Name']), el('span', {}, ['Sets']), el('span', {}, ['Work']), el('span', {}, ['Rest']), el('span', {}, [''])
+    scroll.appendChild(el('div', { class: 'section-hint' }, [
+      'Each exercise runs all its sets before moving to the next. Set Work to 0 for a self-paced lift — tap "Done" after each set instead of a countdown.'
     ]));
 
     var exerciseList = el('div', { id: 'exercise-list' });
@@ -1643,10 +1736,14 @@
         updateTotal();
         updateSaveState();
       }
-    }, ['+ Add exercise']));
+    }, [icon('plus'), 'Add exercise']));
+
+    screen.appendChild(scroll);
 
     var footer = el('div', { class: 'editor-footer' });
-    var totalSpan = el('span', { class: 'total-time', id: 'total-time' }, ['Min. time: ' + fmtClock(totalDuration(w))]);
+    var totalSpan = el('span', { class: 'total-time', id: 'total-time' }, [
+      'Min. time: ', el('strong', {}, [fmtClock(totalDuration(w))])
+    ]);
     var saveBtn = el('button', {
       class: 'save-btn', id: 'save-btn',
       onclick: function () {
@@ -1659,13 +1756,16 @@
     }, ['Save workout']);
     footer.appendChild(totalSpan);
     footer.appendChild(saveBtn);
-    scroll.appendChild(footer);
+    screen.appendChild(footer);
 
-    screen.appendChild(scroll);
     app.appendChild(screen);
 
     function updateTotal() {
-      document.getElementById('total-time').textContent = 'Min. time: ' + fmtClock(totalDuration(w));
+      document.getElementById('total-time').innerHTML = '';
+      document.getElementById('total-time').append('Min. time: ');
+      var strong = document.createElement('strong');
+      strong.textContent = fmtClock(totalDuration(w));
+      document.getElementById('total-time').appendChild(strong);
     }
     function updateSaveState() {
       var ok = w.name.trim().length > 0 && w.exercises.every(function (ex) { return ex.name.trim().length > 0; });
@@ -1676,31 +1776,24 @@
     window.__editorUpdateSaveState = updateSaveState;
   }
 
+  function stepper(labelText, value, hint, onChange) {
+    var valueEl = el('div', { class: 'stepper-value' }, [value]);
+    return el('div', { class: 'stepper-group' }, [
+      el('div', { class: 'stepper-group-label' }, [labelText]),
+      el('div', { class: 'stepper' }, [
+        el('button', { class: 'stepper-btn', type: 'button', onclick: function () { onChange(-1, valueEl); } }, [icon('minus')]),
+        valueEl,
+        el('button', { class: 'stepper-btn', type: 'button', onclick: function () { onChange(1, valueEl); } }, [icon('plus')])
+      ]),
+      hint ? el('div', { class: 'stepper-hint' }, [hint]) : null
+    ]);
+  }
+
   function renderExerciseRows(container, w) {
     container.innerHTML = '';
     w.exercises.forEach(function (ex, i) {
-      var nameInput = el('input', { class: 'name-input', placeholder: 'Exercise name', value: ex.name });
+      var nameInput = el('input', { class: 'exercise-card-name', placeholder: 'Exercise name', value: ex.name });
       nameInput.addEventListener('input', function (e) { ex.name = e.target.value; window.__editorUpdateSaveState(); });
-
-      var setsInput = el('input', { class: 'time-input', type: 'number', min: '1', title: 'Sets', value: String(ex.sets) });
-      setsInput.addEventListener('input', function (e) {
-        ex.sets = Math.max(1, parseInt(e.target.value, 10) || 1);
-        window.__editorUpdateTotal();
-      });
-
-      var workInput = el('input', {
-        class: 'time-input', type: 'number', min: '0', title: 'Work seconds (0 = self-paced)', value: String(ex.work)
-      });
-      workInput.addEventListener('input', function (e) {
-        ex.work = Math.max(0, parseInt(e.target.value, 10) || 0);
-        window.__editorUpdateTotal();
-      });
-
-      var restInput = el('input', { class: 'time-input', type: 'number', min: '0', title: 'Rest seconds', value: String(ex.rest) });
-      restInput.addEventListener('input', function (e) {
-        ex.rest = Math.max(0, parseInt(e.target.value, 10) || 0);
-        window.__editorUpdateTotal();
-      });
 
       var removeBtn = el('button', {
         class: 'remove-btn', title: 'Remove',
@@ -1711,12 +1804,35 @@
           window.__editorUpdateTotal();
           window.__editorUpdateSaveState();
         }
-      }, ['✕']);
+      }, [icon('close')]);
 
-      container.appendChild(el('div', { class: 'exercise-row' }, [
-        el('span', { class: 'idx' }, [String(i + 1)]),
-        nameInput, setsInput, workInput, restInput, removeBtn
-      ]));
+      var head = el('div', { class: 'exercise-card-head' }, [
+        el('div', { class: 'exercise-card-icon' }, [icon('dumbbell')]),
+        nameInput,
+        removeBtn
+      ]);
+
+      var setsStepper = stepper('Sets', String(ex.sets), null, function (delta, valueEl) {
+        ex.sets = Math.max(1, ex.sets + delta);
+        valueEl.textContent = String(ex.sets);
+        window.__editorUpdateTotal();
+      });
+
+      var workStepper = stepper('Work', ex.work > 0 ? ex.work + 's' : 'Self-paced', null, function (delta, valueEl) {
+        ex.work = Math.max(0, ex.work + delta * 5);
+        valueEl.textContent = ex.work > 0 ? ex.work + 's' : 'Self-paced';
+        window.__editorUpdateTotal();
+      });
+
+      var restStepper = stepper('Rest', ex.rest + 's', null, function (delta, valueEl) {
+        ex.rest = Math.max(0, ex.rest + delta * 5);
+        valueEl.textContent = ex.rest + 's';
+        window.__editorUpdateTotal();
+      });
+
+      var steppers = el('div', { class: 'stepper-row' }, [setsStepper, workStepper, restStepper]);
+
+      container.appendChild(el('div', { class: 'exercise-card' }, [head, steppers]));
     });
   }
 
