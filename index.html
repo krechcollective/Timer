@@ -1438,6 +1438,9 @@
 
   var announcer = (function () {
     var ducked = [];
+    var chosenVoice = null;
+    var voiceResolved = false;
+
     function mediaEls() { return Array.prototype.slice.call(document.querySelectorAll('audio,video')); }
     function duck() {
       ducked = mediaEls().filter(function (el) { return !el.paused; });
@@ -1449,12 +1452,45 @@
       });
       ducked = [];
     }
+
+    // Picks the most natural-sounding voice available on this device/browser —
+    // there's no server-side AI voice here (that needs an API key this static
+    // site can't keep secret), so this is the best free, private option.
+    function scoreVoice(v) {
+      var n = v.name.toLowerCase();
+      var s = 0;
+      if (/neural|natural|enhanced|premium/.test(n)) s += 4;
+      if (/google/.test(n)) s += 2;
+      if (!v.localService) s += 1;
+      if (/samantha|ava|nicky|alex|zoe|siri|aria|jenny/.test(n)) s += 1;
+      if (/^en-us/i.test(v.lang)) s += 1;
+      else if (/^en/i.test(v.lang)) s += 0.5;
+      return s;
+    }
+    function pickBestVoice() {
+      if (!('speechSynthesis' in window)) return null;
+      var voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return null;
+      voiceResolved = true;
+      var candidates = voices.filter(function (v) { return /^en/i.test(v.lang); });
+      if (!candidates.length) candidates = voices;
+      candidates.sort(function (a, b) { return scoreVoice(b) - scoreVoice(a); });
+      return candidates[0];
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = function () { chosenVoice = pickBestVoice(); };
+      chosenVoice = pickBestVoice();
+    }
+
     return {
       speak: function (text) {
         if (!('speechSynthesis' in window)) return;
+        if (!voiceResolved) chosenVoice = pickBestVoice();
         duck();
         var u = new SpeechSynthesisUtterance(text);
-        u.rate = 1.05;
+        if (chosenVoice) u.voice = chosenVoice;
+        u.rate = 1.0;
+        u.pitch = 1.04;
         u.onend = unduck;
         u.onerror = unduck;
         window.speechSynthesis.speak(u);
@@ -1465,6 +1501,10 @@
       }
     };
   })();
+
+  function pickLine(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
 
   // ---------------- pace ticker (subtle periodic pulse for self-paced sessions) ----------------
 
@@ -1515,6 +1555,64 @@
     return workout.mode === 'selfpaced' ? buildSelfPacedSegments(workout) : buildGuidedSegments(workout);
   }
 
+  // ---------------- coach voice lines ----------------
+  // Picked fresh per segment at build time, so a workout with several sets
+  // still hears a variety of phrasing rather than the same line on repeat.
+
+  function coachPrepareLine() {
+    return pickLine([
+      'Alright, let’s get ready.',
+      'Get set — we’re about to begin.',
+      'Take a breath, here we go in a moment.',
+      'Okay, let’s warm up and get into it.'
+    ]);
+  }
+
+  function coachBeginLine(exerciseName, setIndex, totalSets) {
+    var setNum = setIndex + 1;
+    if (setNum === 1) {
+      return pickLine([
+        'Alright, let’s get into ' + exerciseName + '. Set one of ' + totalSets + ' — let’s go!',
+        'Time for ' + exerciseName + '. First set, give it your best.',
+        'Up next, ' + exerciseName + '. Set one of ' + totalSets + ', here we go.',
+        'Let’s do this — ' + exerciseName + ', set one.'
+      ]);
+    }
+    if (setNum === totalSets) {
+      return pickLine([
+        'Last set of ' + exerciseName + '! Make it count.',
+        'Final set, ' + exerciseName + '. Finish strong!',
+        'This is it — last set of ' + exerciseName + '. Give it everything.',
+        'One more set of ' + exerciseName + ' and you’re there.'
+      ]);
+    }
+    return pickLine([
+      'Set ' + setNum + ' of ' + totalSets + ', ' + exerciseName + '. Keep pushing!',
+      'Nice — onto set ' + setNum + ' of ' + exerciseName + '.',
+      'Set ' + setNum + '. Let’s keep the pace on ' + exerciseName + '.',
+      'Good work so far — set ' + setNum + ' of ' + exerciseName + '.'
+    ]);
+  }
+
+  function coachRestLine(nextLabel) {
+    var base = pickLine([
+      'Nice work — take a breather.',
+      'Great set! Rest up.',
+      'Solid effort, let’s recover for a moment.',
+      'Good job — shake it out and rest.'
+    ]);
+    return nextLabel ? (base + ' Up next, ' + nextLabel + '.') : base;
+  }
+
+  function coachCompleteLine() {
+    return pickLine([
+      'Workout complete. Great work today!',
+      'That’s a wrap — awesome session.',
+      'All done. You crushed that one.',
+      'Nice job finishing strong. Workout complete.'
+    ]);
+  }
+
   function buildGuidedSegments(workout) {
     var segments = [];
     var totalExercises = workout.exercises.length;
@@ -1522,7 +1620,7 @@
 
     segments.push({
       phase: 'prepare', label: 'Get ready', seconds: PREPARE_SECONDS,
-      announce: 'Get ready', exerciseNumber: 1, totalExercises: totalExercises,
+      announce: coachPrepareLine(), exerciseNumber: 1, totalExercises: totalExercises,
       setNumber: 1, totalSets: Math.max(1, workout.exercises[0].sets || 1),
       exerciseId: workout.exercises[0].id, exerciseName: workout.exercises[0].name
     });
@@ -1533,12 +1631,11 @@
 
       for (var setIndex = 0; setIndex < totalSets; setIndex++) {
         var isLastSet = setIndex === totalSets - 1;
-        var setLabel = 'set ' + (setIndex + 1) + ' of ' + totalSets;
 
         if (exercise.work > 0) {
           segments.push({
             phase: 'work', label: exercise.name, seconds: exercise.work,
-            announce: 'Begin, ' + exercise.name + ', ' + setLabel,
+            announce: coachBeginLine(exercise.name, setIndex, totalSets),
             exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
             setNumber: setIndex + 1, totalSets: totalSets,
             exerciseId: exercise.id, exerciseName: exercise.name
@@ -1546,7 +1643,7 @@
         } else {
           segments.push({
             phase: 'manual', label: exercise.name, seconds: 0,
-            announce: exercise.name + ', ' + setLabel,
+            announce: coachBeginLine(exercise.name, setIndex, totalSets),
             exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
             setNumber: setIndex + 1, totalSets: totalSets,
             exerciseId: exercise.id, exerciseName: exercise.name
@@ -1563,7 +1660,7 @@
           }
           segments.push({
             phase: 'rest', label: 'Rest', seconds: exercise.rest,
-            announce: nextLabel ? ('Rest. Next up, ' + nextLabel) : 'Rest',
+            announce: coachRestLine(nextLabel),
             exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
             setNumber: setIndex + 1, totalSets: totalSets,
             exerciseId: exercise.id, exerciseName: exercise.name
@@ -1587,7 +1684,7 @@
       for (var setIndex = 0; setIndex < totalSets; setIndex++) {
         segments.push({
           phase: 'selfpaced', label: exercise.name, seconds: 0,
-          announce: exercise.name + ', set ' + (setIndex + 1) + ' of ' + totalSets,
+          announce: coachBeginLine(exercise.name, setIndex, totalSets),
           exerciseNumber: exerciseIndex + 1, totalExercises: totalExercises,
           setNumber: setIndex + 1, totalSets: totalSets,
           exerciseId: exercise.id, exerciseName: exercise.name
@@ -2265,7 +2362,7 @@
       var elapsedSeconds = p.startedAt ? Math.round((Date.now() - p.startedAt) / 1000) : null;
       p.finishedElapsedSeconds = elapsedSeconds;
       recordCompletion(elapsedSeconds, p.workout.mode);
-      if (p.workout.mode !== 'selfpaced') announcer.speak('Workout complete. Great work.');
+      if (p.workout.mode !== 'selfpaced') announcer.speak(coachCompleteLine());
       return;
     }
     var seg = p.segments[idx];
