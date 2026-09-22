@@ -725,24 +725,24 @@
   .reorder-btns {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     flex-shrink: 0;
   }
   .reorder-btn {
-    background: none;
-    border: none;
-    color: var(--ink-soft);
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    color: var(--ink);
     cursor: pointer;
-    padding: 2px;
-    width: 22px;
-    height: 18px;
+    width: 30px;
+    height: 26px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  .reorder-btn .icon { width: 15px; height: 15px; }
-  .reorder-btn:hover { color: var(--ink); }
-  .reorder-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .reorder-btn .icon { width: 16px; height: 16px; }
+  .reorder-btn:hover { border-color: var(--accent); background: var(--accent); }
+  .reorder-btn:disabled { opacity: 0.3; cursor: not-allowed; background: var(--bg); border-color: var(--border); }
   .reorder-btn:disabled:hover { color: var(--ink-soft); }
 
   .exercise-card-icon {
