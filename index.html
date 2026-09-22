@@ -1569,6 +1569,44 @@
     };
   })();
 
+  // ---------------- audio session keep-alive ----------------
+  // iOS/Safari will sometimes route speechSynthesis to the phone's built-in
+  // speaker instead of a connected Bluetooth output if the page has no audio
+  // of its own already playing. Holding a silent tone open for the whole
+  // session keeps the page's audio route "live," which is the standard fix
+  // for spoken cues going missing on a Bluetooth speaker while music plays.
+  var audioKeepAlive = (function () {
+    var ctx = null;
+    var osc = null;
+    var gain = null;
+    function getCtx() {
+      if (!ctx) {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) ctx = new Ctx();
+      }
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    return {
+      start: function () {
+        this.stop();
+        var c = getCtx();
+        if (!c) return;
+        osc = c.createOscillator();
+        gain = c.createGain();
+        osc.frequency.value = 20;
+        gain.gain.value = 0.0006;
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start();
+      },
+      stop: function () {
+        if (osc) { try { osc.stop(); } catch (e) {} osc.disconnect(); osc = null; }
+        if (gain) { gain.disconnect(); gain = null; }
+      }
+    };
+  })();
+
   // ---------------- segment engine ----------------
   // Every exercise carries its own set count and its own rest — exercises run
   // one after another (not a shared circuit/round), which matches how a real
@@ -2413,6 +2451,7 @@
       p.running = false;
       stopTicking();
       paceTicker.stop();
+      audioKeepAlive.stop();
       var elapsedSeconds = p.startedAt ? Math.round((Date.now() - p.startedAt) / 1000) : null;
       p.finishedElapsedSeconds = elapsedSeconds;
       recordCompletion(elapsedSeconds, p.workout.mode);
@@ -2457,6 +2496,7 @@
     var closeAction = function () {
       stopTicking();
       paceTicker.stop();
+      audioKeepAlive.stop();
       announcer.cancel();
       state.screen = 'workouts';
       render();
@@ -2514,6 +2554,7 @@
         onclick: function () {
           p.started = true;
           p.startedAt = Date.now();
+          audioKeepAlive.start();
           if (w.mode === 'selfpaced' && w.paceEnabled) paceTicker.start(w.paceInterval);
           advanceToSegment(0);
           renderPlayer();
